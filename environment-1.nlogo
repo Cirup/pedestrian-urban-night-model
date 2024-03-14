@@ -8,6 +8,9 @@ to setup
   clear-all
   set intersection 10
   setup-environment
+  create-point-a
+  create-point-b
+  create-pedestrians
   reset-ticks
 end
 
@@ -33,11 +36,33 @@ to generate-light
 
 end
 
+to create-point-a
+  ask patch -20 0 [
+    set pcolor red
+  ]
+end
+
+to create-point-b
+  ask patch 20 0 [
+    set pcolor blue
+  ]
+end
+
+to create-pedestrians
+  let num-peds round num-pedestrians
+  create-turtles num-peds [
+    set shape "person" ; icon change to person
+    set color random 140 ; random color of pedestrians
+    setxy -20 0  ; spawn point
+    set heading 90 ; where the pedestrians are facing
+  ]
+end
+
 to-report can-walk-here?
-  ifelse [pcolor] of patch-here = gray [
-    report false
-  ] [
+  ifelse [pcolor] of patch-here = black or [pcolor] of patch-here = yellow [
     report true
+  ] [
+    report false
   ]
 end
 @#$#@#$#@
@@ -84,6 +109,21 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+58
+139
+230
+172
+num-pedestrians
+num-pedestrians
+0
+100
+3.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
