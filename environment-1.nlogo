@@ -1,6 +1,7 @@
 globals [
   street-width
   intersection
+  light
 ]
 
 to setup
@@ -18,10 +19,18 @@ to setup-environment
     ] [
       set pcolor gray
     ]
-    ask patches with [pxcor mod intersection = 0 and pycor mod intersection = 0][
-      set pcolor yellow
-    ]
+    generate-light
   ]
+end
+
+to generate-light
+  ask patches with [pxcor mod intersection = 0 and pycor mod intersection = 0]
+  [
+      set pcolor yellow
+    ask other patches in-radius (random 1 + 1)
+    [set pcolor yellow]
+    ]
+
 end
 
 to-report can-walk-here?
@@ -33,10 +42,10 @@ to-report can-walk-here?
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-315
-35
-752
-473
+331
+69
+768
+507
 -1
 -1
 13.0
