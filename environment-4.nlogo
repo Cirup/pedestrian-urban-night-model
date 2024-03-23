@@ -2,7 +2,6 @@ globals [
   lanes          ; a list of the y coordinates of different lanes
 ]
 
-
 to setup
   clear-all
   draw-road
@@ -12,27 +11,36 @@ end
 to draw-road
   ask patches [
     ; the road is surrounded by green grass of varying shades
-    set pcolor green - random-float 0.5
+    set pcolor grey - random-float 0.5
   ]
   set lanes n-values number-of-lanes [ n -> number-of-lanes - (n * 2) - 1 ]
   ask patches with [ abs pycor <= number-of-lanes ] [
     ; the road itself is varying shades of grey
     set pcolor grey - 2.5 + random-float 0.25
+    ;set pcolor black
   ]
-  ;draw-road-lines
-
 
   ; roads 4 width
   ;[x lower limit, x higher limit, y lower limit, y higher limit]
-  create-roads -30 -26 3 25 ;vertical road at quadrant 2
-  create-roads 26 30 -25 25 ;vertical road at quadrant 4
-  create-roads -45 -41 -19 -3 ;vertical road at quadrant 3
-  create-roads -2 2 3 25;vertical road at quadrant 1 and 2
-  create-roads -45 27 -20 -16 ;horizontal road at quadrant 3 and 4
-  create-roads -56 -30 10 14;horizontal road at quadrant 2
-  create-roads 30 60 16 20; horizontal line at quadrant 1
-  create-roads -56 -52 0 11
+  ;65x 40y
+  ;vertical roads
+  create-roads 28 30 -40 40 ;quadrant 1 through 4
+  create-roads -2 0 1 65;quadrant 1 and 2
+  create-roads -29 -28 1 23 ; quadrant 2
+  create-roads -40 -38 23 40; quadrant 2
+  create-roads -55 -53 1 11;quadrant 2 through 3
+  create-roads -45 -41 -19 -3 ;quadrant 3
+  create-roads -60 -59 -31 -1; quadrant 4
+  create-roads 55 57 -25 0;quadrant 4
 
+  ;horizontal roads
+  create-roads 30 65 31 32;quadrant 1
+  create-roads 30 65 10 11;quadrant 1
+  create-roads -65 -53 -32 -30 ;quadrant 3
+  create-roads -55 -30 11 13;quadrant 2
+  create-roads -45 27 -20 -16 ;quadrant 3 and 4
+  create-roads -65 28 23 25; quadrant 1 through 2
+  create-roads 39 65 -27 -25
 
 end
 
@@ -48,37 +56,6 @@ to create-roads[x1 x2 y1 y2]
   ]
 end
 
-to draw-road-lines
-  let y (last lanes) - 1 ; start below the "lowest" lane
-  while [ y <= first lanes + 1 ] [
-    if not member? y lanes [
-      ; draw lines on road patches that are not part of a lane
-      ifelse abs y = number-of-lanes
-        [ draw-line y yellow 0 ]  ; yellow for the sides of the road
-        [ draw-line y white 0.5 ] ; dashed white between lanes
-    ]
-    set y y + 1 ; move up one patch
-  ]
-end
-
-to draw-line [ y line-color gap ]
-  ; We use a temporary turtle to draw the line:
-  ; - with a gap of zero, we get a continuous line;
-  ; - with a gap greater than zero, we get a dasshed line.
-  create-turtles 1 [
-    setxy (min-pxcor - 0.5) y
-    hide-turtle
-    set color line-color
-    set heading 90
-    repeat world-width [
-      pen-up
-      forward gap
-      pen-down
-      forward (1 - gap)
-    ]
-    die
-  ]
-end
 
 to-report number-of-lanes
   ; To make the number of lanes easily adjustable, remove this
@@ -88,13 +65,13 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-210
+214
 10
-1065
-376
+1270
+667
 -1
 -1
-7.0
+8.0
 1
 10
 1
@@ -104,10 +81,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--60
-60
--25
-25
+-65
+65
+-40
+40
 0
 0
 1
