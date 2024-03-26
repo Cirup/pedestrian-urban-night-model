@@ -1,5 +1,6 @@
 globals [
   lanes          ; a list of the y coordinates of different lanes
+  current-number-of-streetlights
 ]
 
 ; streetlights and pedestrians are both breeds of turtles
@@ -20,28 +21,81 @@ patches-own [
 
 to setup
   clear-all
+  set current-number-of-streetlights 0
   draw-grass
   draw-road
+  reset-ticks
+end
 
-  create-streetlights 5 [
+to setup-all-streetlights
+  clear-streetlights
+  create-streetlights number-of-streetlights [
     set shape "circle"
     set color grey - 2
     set size 1
   ]
 
   place-streetlights
+end
 
-  diffuse light ((brightness  * 0.5) / 100)
-  ask patches with [light > 0][
-    set light ((brightness * 0.5))
-    update-light
+to setup-remaining-streetlights
+  ; calculate the remaining number of streetlights to be placed
+  let remaining-streetlights number-of-streetlights - current-number-of-streetlights
+
+  ; create the remaining streetlights
+  create-streetlights remaining-streetlights [
+    let potential-patches patches with [is-sidewalk? and not any? streetlights-here]
+    if any? potential-patches [
+      let random-patch one-of potential-patches
+      move-to random-patch
+      set shape "circle"
+      set color grey - 2
+      set size 1
+      set light brightness
+    ]
   ]
 
-  reset-ticks
+  set current-number-of-streetlights number-of-streetlights
+end
+
+to setup-one-streetlight
+  ; wait for the user to click the mouse
+  while [not mouse-down?] [ display ]
+
+  ; get the patch that the user clicked on
+  let clicked-patch patch mouse-xcor mouse-ycor
+
+  ifelse current-number-of-streetlights < number-of-streetlights [
+    ifelse [is-sidewalk?] of clicked-patch [
+      create-streetlights 1 [
+        set shape "circle"
+        set color grey - 2
+        set size 1
+        move-to clicked-patch
+        set light brightness
+      ]
+      set current-number-of-streetlights current-number-of-streetlights + 1
+      print current-number-of-streetlights
+    ] [
+      print "You can only place a streetlight on a sidewalk."
+    ]
+  ] [
+    print "You can't place anymore streetlights."
+  ]
+end
+
+to clear-streetlights
+  ask streetlights [
+    die
+  ]
 end
 
 to go
-
+  diffuse light (brightness / 100)
+  ask patches with [light > 0][
+    set light ((brightness / 100))
+    update-light
+  ]
   tick
 end
 
@@ -51,6 +105,13 @@ to update-light
     set pcolor yellow
   ] [
     set pcolor scale-color yellow light 0 50
+  ]
+end
+
+to place-one-streetlight [current-streetlight clicked-patch]
+  ask current-streetlight [
+    move-to clicked-patch
+    set light brightness
   ]
 end
 
@@ -153,10 +214,10 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-214
-10
-1270
-667
+377
+31
+1433
+688
 -1
 -1
 8.0
@@ -180,10 +241,10 @@ ticks
 30.0
 
 BUTTON
-44
-125
-107
-158
+35
+95
+98
+128
 NIL
 setup
 NIL
@@ -197,10 +258,10 @@ NIL
 1
 
 BUTTON
-116
-125
-179
-158
+110
+95
+173
+128
 go
 go
 T
@@ -214,19 +275,115 @@ NIL
 1
 
 SLIDER
-29
-239
-201
-272
+35
+365
+225
+398
 brightness
 brightness
 0
-100
-50.0
+50
+25.0
 1
 1
 NIL
 HORIZONTAL
+
+TEXTBOX
+34
+68
+184
+86
+Setup Grass & Roads
+11
+0.0
+1
+
+TEXTBOX
+35
+295
+185
+313
+Streetlight Settings\n
+11
+0.0
+1
+
+TEXTBOX
+30
+160
+180
+178
+Setup Streetlight(s)
+11
+0.0
+1
+
+BUTTON
+30
+185
+125
+218
+setup-one
+setup-one-streetlight
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+30
+230
+125
+263
+setup-all
+setup-all-streetlights
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+35
+320
+225
+353
+number-of-streetlights
+number-of-streetlights
+0
+10
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+BUTTON
+135
+185
+250
+218
+setup-remaining
+setup-remaining-streetlights
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -587,5 +744,5 @@ true
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 @#$#@#$#@
-0
+1
 @#$#@#$#@
