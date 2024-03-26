@@ -1,6 +1,7 @@
 globals [
   lanes          ; a list of the y coordinates of different lanes
   current-number-of-streetlights
+
 ]
 
 ; streetlights and pedestrians are both breeds of turtles
@@ -10,6 +11,7 @@ breed [ pedestrians pedestrian ]
 pedestrians-own [
   speed ; walking speed or pace of the pedestrian
   visibility ; determines how far a pedestrian can see
+  fear-tolerance; determines fear threshold a pedestrian can take to walk in that area
 ]
 
 patches-own [
@@ -17,10 +19,13 @@ patches-own [
   is-road? ; boolean attribute that determines whether or not a patch is a road
   is-sidewalk? ; boolean attribute that determines whether or not a patch is a sidewalk
   light ; how much light the current patch is receiving from streetlights
+  starting-point?
+  destination-point?
 ]
 
 to setup
   clear-all
+  set-patch-size 5
   set current-number-of-streetlights 0
   draw-grass
   draw-road
@@ -31,7 +36,7 @@ to setup-all-streetlights
   clear-streetlights
   create-streetlights number-of-streetlights [
     set shape "circle"
-    set color grey - 2
+    set color yellow
     set size 1
   ]
 
@@ -49,7 +54,7 @@ to setup-remaining-streetlights
       let random-patch one-of potential-patches
       move-to random-patch
       set shape "circle"
-      set color grey - 2
+      set color yellow
       set size 1
       set light brightness
     ]
@@ -57,6 +62,55 @@ to setup-remaining-streetlights
 
   set current-number-of-streetlights number-of-streetlights
 end
+
+; Create Starting
+to create-start-point
+  print "Select your starting point (Sidewalk)"
+  while [not mouse-down?] [ display ]
+  let clicked-patch patch mouse-xcor mouse-ycor
+
+  ifelse [is-sidewalk? or is-road?] of clicked-patch[
+  ask clicked-patch [
+    ; When the user clicks on a patch, change its color to red
+      set pcolor red
+      ; Set the variable "start-point" to true for this patch
+      set starting-point? true
+    ]
+  ][
+  print "You can only put starting point in a sidewalk"
+  ]
+
+  create-people
+end
+
+; Create Destination Point
+to create-destination-point
+  print "Select your starting point (Sidewalk)"
+  while [not mouse-down?] [ display ]
+  let clicked-patch patch mouse-xcor mouse-ycor
+
+  ifelse [is-sidewalk?] of clicked-patch[
+  ask clicked-patch [
+    ; When the user clicks on a patch, change its color to red
+      set pcolor blue
+      ; Set the variable "start-point" to true for this patch
+      set destination-point? true
+    ]
+  ][
+  print "You can only put starting point in a sidewalk"
+  ]
+end
+
+to create-people
+  ask patches with [starting-point? = true][
+  sprout number-of-pedestrians[
+      set shape "person" ; icon change to person
+      set size 2
+      set color white
+    ]
+  ]
+end
+
 
 to setup-one-streetlight
   ; wait for the user to click the mouse
@@ -69,7 +123,7 @@ to setup-one-streetlight
     ifelse [is-sidewalk?] of clicked-patch [
       create-streetlights 1 [
         set shape "circle"
-        set color grey - 2
+        set color yellow
         set size 1
         move-to clicked-patch
         set light brightness
@@ -88,17 +142,24 @@ to clear-streetlights
   ask streetlights [
     die
   ]
+
 end
 
 to go
-  diffuse light (brightness / 100)
-  ask patches with [light > 0][
-    set light ((brightness / 100))
-    update-light
+
+  print (calculate-light-spread)
+  ask streetlights [
+
+    ask patches in-radius calculate-light-spread [
+      update-light
+
+
+    ]
   ]
+
+
   tick
 end
-
 
 to update-light
   ifelse light >= brightness [
@@ -129,16 +190,18 @@ to place-streetlights
   ]
 end
 
+
 to draw-grass
   ask patches [
     ; the road is surrounded by green grass of varying shades
-    set pcolor green - random-float 0.5
+    set pcolor green
     set is-grass? true
     set is-road? false
     set is-sidewalk? false
     set light 0
   ]
 end
+
 
 to draw-road
   set lanes n-values number-of-lanes [ n -> number-of-lanes - (n * 2) - 1 ]
@@ -191,6 +254,7 @@ to draw-road
   ]
 end
 
+
 to create-roads [x1 x2 y1 y2]
   ask patches with [
     pxcor >= (x1 - 1)
@@ -206,6 +270,15 @@ to create-roads [x1 x2 y1 y2]
   ]
 end
 
+
+to-report calculate-light-spread
+  ; Calculate the light spread given the brightness and standard height of streetlight (2.7432 - 4.26m)
+  let lumen brightness * 1000
+  let light-spread sqrt ((lumen / (4 * 18.25)) * 1 / 3.14)
+
+  report light-spread
+end
+
 to-report number-of-lanes
   ; To make the number of lanes easily adjustable, remove this
   ; reporter and create a slider on the interface with the same
@@ -214,20 +287,20 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-377
-31
-1433
-688
+335
+30
+998
+444
 -1
 -1
-8.0
+5.0
 1
 10
 1
 1
 1
 0
-1
+0
 1
 1
 -65
@@ -241,10 +314,10 @@ ticks
 30.0
 
 BUTTON
-35
-95
-98
-128
+63
+92
+126
+125
 NIL
 setup
 NIL
@@ -258,10 +331,10 @@ NIL
 1
 
 BUTTON
-110
-95
-173
-128
+138
+92
+203
+127
 go
 go
 T
@@ -275,18 +348,18 @@ NIL
 1
 
 SLIDER
-35
-365
-225
-398
+30
+435
+220
+468
 brightness
 brightness
-0
-50
-25.0
+2
+15
+3.0
 1
 1
-NIL
+lum
 HORIZONTAL
 
 TEXTBOX
@@ -300,10 +373,10 @@ Setup Grass & Roads
 1
 
 TEXTBOX
-35
-295
-185
-313
+30
+365
+180
+383
 Streetlight Settings\n
 11
 0.0
@@ -354,15 +427,15 @@ NIL
 1
 
 SLIDER
-35
-320
-225
-353
+30
+390
+220
+423
 number-of-streetlights
 number-of-streetlights
 0
-10
-5.0
+20
+11.0
 1
 1
 NIL
@@ -384,6 +457,55 @@ NIL
 NIL
 NIL
 1
+
+BUTTON
+30
+280
+125
+313
+NIL
+create-start-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+140
+280
+255
+313
+NIL
+create-destination-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+30
+520
+203
+553
+number-of-pedestrians
+number-of-pedestrians
+1
+50
+1.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
