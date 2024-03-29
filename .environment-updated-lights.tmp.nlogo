@@ -75,6 +75,7 @@ to setup-all-streetlights
   ask patches [ generate-field ]
 end
 
+
 to clear-streetlights
   ask streetlights [
     die
@@ -86,6 +87,13 @@ to go
   tick
 end
 
+
+to place-one-streetlight [current-streetlight clicked-patch]
+  ask current-streetlight [
+    move-to clicked-patch
+ ;   set light brightness
+  ]
+end
 
 to place-streetlights
   ask streetlights [
@@ -179,6 +187,15 @@ to create-roads [x1 x2 y1 y2]
     set is-sidewalk? false
     set is-road? true
   ]
+end
+
+
+to-report calculate-light-spread
+  ; Calculate the light spread given the brightness and standard height of streetlight (2.7432 - 4.26m)
+  let lumen brightness * 1000
+  let light-spread sqrt ((lumen / (4 * 18.25)) * 1 / 3.14)
+
+  report light-spread
 end
 
 to-report number-of-lanes
@@ -296,6 +313,23 @@ Setup Streetlight(s)
 
 BUTTON
 30
+185
+125
+218
+setup-one
+setup-one-streetlight
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+30
 230
 125
 263
@@ -325,6 +359,57 @@ number-of-streetlights
 1
 NIL
 HORIZONTAL
+
+BUTTON
+135
+185
+250
+218
+setup-remaining
+setup-remaining-streetlights
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+30
+280
+125
+313
+NIL
+create-start-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+140
+280
+255
+313
+NIL
+create-destination-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 SLIDER
 30
