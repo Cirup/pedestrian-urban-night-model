@@ -7,6 +7,7 @@ globals [
 ; streetlights and pedestrians are both breeds of turtles
 breed [ streetlights streetlight ]
 breed [ pedestrians pedestrian ]
+breed [ poles pole ]
 
 pedestrians-own [
   speed ; walking speed or pace of the pedestrian
@@ -22,18 +23,17 @@ patches-own [
   is-grass? ; boolean attribute that determines whether or not a patch is a grass
   is-road? ; boolean attribute that determines whether or not a patch is a road
   is-sidewalk? ; boolean attribute that determines whether or not a patch is a sidewalk
-  light ; how much light the current patch is receiving from streetlights
-  starting-point?
-  destination-point?
   light-level
 ]
 
 to setup
   clear-all
+
   set-patch-size 5
   set current-number-of-streetlights 0
   set-default-shape streetlights "circle"
   set scale-factor 10
+
   draw-grass
   draw-road
   reset-ticks
@@ -46,8 +46,8 @@ to generate-field ;; patch procedure
     set-field myself
   ]
 
-  set pcolor scale-color yellow (sqrt light-level) 0.1 ( sqrt ( 20 * max [intensity] of streetlights ) )
-
+  ;; uncomment to see accurate representation of how light is distributed
+; set pcolor scale-color yellow (sqrt light-level) 0.1 ( sqrt ( 20 * max [intensity] of streetlights ) )
 end
 
 to set-field [p] ;; streetlight procedure; input p is a patch
@@ -65,27 +65,26 @@ end
 to setup-all-streetlights
   clear-streetlights
   create-streetlights number-of-streetlights [
-    set color white
-    set intensity 1
-    set size sqrt 1
+    set color [255 255 0 100]
+    set intensity brightness
+    set size brightness + 10
   ]
 
   place-streetlights
-
-  ask patches [ generate-field ]
+  ask patches [
+    generate-field
+  ]
 end
 
 to clear-streetlights
   ask streetlights [
     die
   ]
-
 end
 
 to go
   tick
 end
-
 
 to place-streetlights
   ask streetlights [
@@ -93,7 +92,6 @@ to place-streetlights
     ifelse any? potential-patches [
       let random-patch one-of potential-patches
       move-to random-patch
-   ;   set light brightness
     ] [
       ; Handle the case where there are no sidewalk patches available
       print "No sidewalk patches available for placing streetlights!"
@@ -101,18 +99,15 @@ to place-streetlights
   ]
 end
 
-
 to draw-grass
   ask patches [
     ; the road is surrounded by green grass of varying shades
-    set pcolor green
+    set pcolor 71 + random-float 0.3
     set is-grass? true
     set is-road? false
     set is-sidewalk? false
-    set light 0
   ]
 end
-
 
 to draw-road
   set lanes n-values number-of-lanes [ n -> number-of-lanes - (n * 2) - 1 ]
@@ -164,7 +159,6 @@ to draw-road
     ]
   ]
 end
-
 
 to create-roads [x1 x2 y1 y2]
   ask patches with [
@@ -258,7 +252,7 @@ brightness
 brightness
 1
 10
-7.0
+5.0
 1
 1
 lum
