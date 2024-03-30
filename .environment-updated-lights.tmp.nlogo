@@ -24,18 +24,36 @@ patches-own [
   is-road? ; boolean attribute that determines whether or not a patch is a road
   is-sidewalk? ; boolean attribute that determines whether or not a patch is a sidewalk
   light-level
+  starting-point?
+  destination-point?
 ]
 
 to setup
   clear-all
 
-  set-patch-size 5
+  set-patch-size 7
   set current-number-of-streetlights 0
   set-default-shape streetlights "circle"
   set scale-factor 10
 
   draw-grass
   draw-road
+  create-starting-points
+  create-end-point
+  create-people
+
+  let light-size brightness + 10
+  create-streetlights number-of-streetlights [
+    set color [255 255 0 100]
+    set intensity brightness
+    set size light-size
+  ]
+
+  place-streetlights light-size
+  ask patches [
+    generate-field
+  ]
+
   reset-ticks
 end
 
@@ -61,23 +79,6 @@ to set-field [p] ;; streetlight procedure; input p is a patch
   ask p [ set light-level light-level + amount ]
 end
 
-
-to setup-all-streetlights
-  clear-streetlights
-  let light-size brightness + 10
-  create-streetlights number-of-streetlights [
-    set color [255 255 0 100]
-    set intensity brightness
-    set size light-size
-  ]
-
-  place-streetlights light-size
-
-  ask patches [
-    generate-field
-  ]
-end
-
 to clear-streetlights
   ask streetlights [
     die
@@ -86,6 +87,73 @@ end
 
 to go
   tick
+end
+
+to create-starting-points
+  let selected-patches []
+  repeat 3 [
+    let random-patch one-of patches with [is-sidewalk? and not member? self selected-patches]
+    if random-patch != nobody [
+      ask random-patch [
+        set pcolor red
+        set starting-point? true
+      ]
+      set selected-patches lput random-patch selected-patches
+    ]
+  ]
+end
+
+to create-end-point
+  let potential-end-points patches with [is-sidewalk? and not starting-point?]
+  let starting-patches patches with [starting-point?]
+  let furthest-patch nobody
+  let max-distance 0
+
+  ask potential-end-points [
+    let current-patch self
+    let current-patch-distance 0
+
+    ask starting-patches [
+      let dist distance current-patch
+      set current-patch-distance current-patch-distance + dist ; Accumulate the distances
+    ]
+
+    ; Update furthest patch and max distance if the current patch is further
+    if current-patch-distance > max-distance [
+      set max-distance current-patch-distance
+      set furthest-patch current-patch
+    ]
+  ]
+
+  ask furthest-patch [
+    set pcolor lime
+    set destination-point? true
+  ]
+end
+
+to create-people
+  let starting-patches patches with [starting-point?]
+  let count-starting-point count starting-patches
+  let pedestrian-each-starting-point ceiling (number-of-pedestrians / count-starting-point)
+
+
+  ifelse count-starting-point < number-of-pedestrians[
+    ask starting-patches [
+      sprout-pedestrians pedestrian-each-starting-point[
+        set size 2
+        set color white
+      ]
+    ]
+  ]
+    ;else
+  [
+    let selected-patch one-of starting-patches
+    create-pedestrians number-of-pedestrians[
+      set size 2
+      set color white
+      move-to selected-patch
+    ]
+   ]
 end
 
 to place-streetlights [radius]
@@ -107,7 +175,6 @@ to place-streetlights [radius]
   ]
 end
 
-
 to draw-grass
   ask patches [
     ; the road is surrounded by green grass of varying shades
@@ -115,6 +182,8 @@ to draw-grass
     set is-grass? true
     set is-road? false
     set is-sidewalk? false
+    set starting-point? false
+    set destination-point? false
   ]
 end
 
@@ -127,6 +196,8 @@ to draw-road
     set is-grass? false
     set is-sidewalk? false
     set is-road? true
+    set starting-point? false
+    set destination-point? false
   ]
 
   ; Mark sidewalk patches
@@ -181,6 +252,8 @@ to create-roads [x1 x2 y1 y2]
     set is-grass? false
     set is-sidewalk? false
     set is-road? true
+    set starting-point? false
+    set destination-point? false
   ]
 end
 
@@ -192,13 +265,13 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-420
-60
-1083
-474
+421
+57
+1348
+633
 -1
 -1
-5.0
+7.0
 1
 10
 1
@@ -219,10 +292,10 @@ ticks
 30.0
 
 BUTTON
-40
-93
-103
-126
+35
+95
+98
+128
 NIL
 setup
 NIL
@@ -236,10 +309,10 @@ NIL
 1
 
 BUTTON
-111
-92
-177
-127
+110
+95
+176
+129
 go
 go
 T
@@ -253,10 +326,10 @@ NIL
 1
 
 SLIDER
-31
-364
-210
-398
+29
+319
+208
+352
 brightness
 brightness
 1
@@ -278,10 +351,10 @@ Setup Grass & Roads
 1
 
 TEXTBOX
-31
-294
-181
-312
+29
+249
+179
+267
 Streetlight Settings\n
 11
 0.0
@@ -289,71 +362,54 @@ Streetlight Settings\n
 
 TEXTBOX
 30
-162
-180
-180
-Setup Streetlight(s)
+160
+368
+179
+Setup Streetlight(s) & Pedestrian Spawn Points
 11
 0.0
 1
 
-BUTTON
-30
-190
-125
-223
-setup-all
-setup-all-streetlights
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SLIDER
-31
-320
-210
-354
+29
+276
+208
+309
 number-of-streetlights
 number-of-streetlights
 1
 10
-3.0
+5.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-31
-449
-204
-482
+29
+403
+202
+436
 number-of-pedestrians
 number-of-pedestrians
 1
 50
-1.0
+12.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-219
-320
-392
-354
+217
+276
+390
+309
 minimum-distance
 minimum-distance
 0
 10
-0.0
+3.0
 1
 1
 NIL
