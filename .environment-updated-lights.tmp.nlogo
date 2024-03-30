@@ -91,10 +91,10 @@ end
 to place-streetlights [radius]
   ask streetlights [
     let potential-patches patches with [is-sidewalk?]
-    let radius radius + minimum-di
+    set radius radius + minimum-distance
     ifelse any? potential-patches [
       ; Find a suitable patch where the streetlight won't overlap with existing ones
-      let suitable-patch one-of potential-patches with [not any? streetlights in-radius ]
+      let suitable-patch one-of potential-patches with [not any? streetlights in-radius radius]
       ifelse suitable-patch != nobody [
         move-to suitable-patch
       ] [
@@ -192,10 +192,10 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-471
-59
-1134
-473
+420
+60
+1083
+474
 -1
 -1
 5.0
@@ -219,10 +219,10 @@ ticks
 30.0
 
 BUTTON
-63
-92
+40
+93
+103
 126
-125
 NIL
 setup
 NIL
@@ -236,9 +236,9 @@ NIL
 1
 
 BUTTON
-138
+111
 92
-203
+177
 127
 go
 go
@@ -253,10 +253,10 @@ NIL
 1
 
 SLIDER
-30
-435
-209
-469
+31
+364
+210
+398
 brightness
 brightness
 1
@@ -278,10 +278,10 @@ Setup Grass & Roads
 1
 
 TEXTBOX
-30
-365
-180
-383
+31
+294
+181
+312
 Streetlight Settings\n
 11
 0.0
@@ -289,9 +289,9 @@ Streetlight Settings\n
 
 TEXTBOX
 30
-160
+162
 180
-178
+180
 Setup Streetlight(s)
 11
 0.0
@@ -299,9 +299,9 @@ Setup Streetlight(s)
 
 BUTTON
 30
-230
+190
 125
-263
+223
 setup-all
 setup-all-streetlights
 NIL
@@ -315,25 +315,25 @@ NIL
 1
 
 SLIDER
-30
-392
-209
-426
+31
+320
+210
+354
 number-of-streetlights
 number-of-streetlights
 1
 10
-5.0
+3.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-30
-520
-203
-553
+31
+449
+204
+482
 number-of-pedestrians
 number-of-pedestrians
 1
@@ -345,15 +345,15 @@ NIL
 HORIZONTAL
 
 SLIDER
-218
+219
+320
 392
-391
-426
+354
 minimum-distance
 minimum-distance
 0
 10
-5.0
+0.0
 1
 1
 NIL
