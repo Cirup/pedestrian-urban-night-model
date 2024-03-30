@@ -24,6 +24,8 @@ patches-own [
   is-road? ; boolean attribute that determines whether or not a patch is a road
   is-sidewalk? ; boolean attribute that determines whether or not a patch is a sidewalk
   light-level
+  starting-point?
+  destination-point?
 ]
 
 to setup
@@ -37,6 +39,67 @@ to setup
   draw-grass
   draw-road
   reset-ticks
+end
+
+to create-start-point
+
+  print "Select your starting point (Sidewalk)"
+  while [not mouse-down?] [ display ]
+  let clicked-patch patch mouse-xcor mouse-ycor
+
+  ifelse [is-sidewalk? or is-road?] of clicked-patch[
+  ask clicked-patch [
+    ; When the user clicks on a patch, change its color to red
+      set pcolor red
+      ; Set the variable "start-point" to true for this patch
+      set starting-point? true
+    ]
+  ][
+  print "You can only put starting point in a sidewalk"
+  ]
+end
+
+; Create Destination Point
+to create-destination-point
+  print "Select your starting point (Sidewalk)"
+  while [not mouse-down?] [ display ]
+  let clicked-patch patch mouse-xcor mouse-ycor
+
+  ifelse [is-sidewalk? or is-road?] of clicked-patch[
+  ask clicked-patch [
+    ; When the user clicks on a patch, change its color to red
+      set pcolor blue
+      ; Set the variable "start-point" to true for this patch
+      set destination-point? true
+    ]
+  ][
+  print "You can only put starting point in a sidewalk"
+  ]
+end
+
+to create-people
+  let starting-patch patches with[starting-point? = true]
+  let count-starting-point count starting-patch
+  let pedestrian-each-starting-point ceiling(number-of-pedestrians / count-starting-point)
+
+
+  ifelse count-starting-point < number-of-pedestrians[
+    ask starting-patch[
+      sprout-pedestrians pedestrian-each-starting-point[
+        set size 2
+        set color white
+      ]
+    ]
+  ]
+    ;else
+  [
+    let selected-patch one-of starting-patch
+    create-pedestrians number-of-pedestrians[
+      set size 2
+      set color white
+      move-to selected-patch
+    ]
+   ]
 end
 
 to generate-field ;; patch procedure
@@ -80,10 +143,6 @@ to clear-streetlights
   ask streetlights [
     die
   ]
-end
-
-to go
-  tick
 end
 
 to place-streetlights
@@ -175,6 +234,29 @@ to create-roads [x1 x2 y1 y2]
   ]
 end
 
+; ======================= Pedestrian Behaviour =========================
+to go
+   create-people
+  tick
+end
+
+to move-pedestrian
+  ; prioritize choosing to move where there is light
+  ;
+end
+
+to mark-sight
+  let patch-ahead-visible vision / 4
+  let dist 1
+  let a1 0
+
+  while [dist <= visibility]
+  [
+    print "TEST"
+    set dist dist + 1
+  ]
+end
+
 to-report number-of-lanes
   ; To make the number of lanes easily adjustable, remove this
   ; reporter and create a slider on the interface with the same
@@ -186,7 +268,7 @@ GRAPHICS-WINDOW
 335
 30
 998
-444
+544
 -1
 -1
 5.0
@@ -201,8 +283,8 @@ GRAPHICS-WINDOW
 1
 -65
 65
--40
-40
+-50
+50
 0
 0
 1
@@ -210,11 +292,11 @@ ticks
 30.0
 
 BUTTON
-63
-92
-126
-125
-NIL
+35
+95
+117
+128
+draw-env
 setup
 NIL
 1
@@ -227,13 +309,13 @@ NIL
 1
 
 BUTTON
-138
-92
-203
-127
+160
+235
+225
+270
 go
 go
-T
+NIL
 1
 T
 OBSERVER
@@ -252,7 +334,7 @@ brightness
 brightness
 1
 10
-5.0
+4.0
 1
 1
 lum
@@ -289,10 +371,10 @@ Setup Streetlight(s)
 1
 
 BUTTON
-30
-230
-125
-263
+35
+235
+130
+268
 setup-all
 setup-all-streetlights
 NIL
@@ -313,18 +395,18 @@ SLIDER
 number-of-streetlights
 number-of-streetlights
 1
-20
-5.0
+10
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-30
-520
-203
-553
+25
+480
+198
+513
 number-of-pedestrians
 number-of-pedestrians
 1
@@ -334,6 +416,72 @@ number-of-pedestrians
 1
 NIL
 HORIZONTAL
+
+BUTTON
+40
+310
+127
+343
+start-point
+create-start-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+150
+310
+242
+343
+destination
+create-destination-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+25
+530
+197
+563
+vision
+vision
+0
+20
+11.0
+1
+1
+NIL
+HORIZONTAL
+
+BUTTON
+244
+582
+334
+616
+NIL
+mark-sight
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
