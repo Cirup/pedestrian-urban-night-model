@@ -64,16 +64,15 @@ end
 
 to setup-all-streetlights
   clear-streetlights
+  let light-size brightness + 10
   create-streetlights number-of-streetlights [
-;    set color [255 255 0 100]
-;    set intensity brightness
-;    set size brightness + 10
-    set color yellow
+    set color [255 255 0 100]
     set intensity brightness
-    set size 0
+    set size light-size
   ]
 
-  place-streetlights
+  place-streetlights light-size
+
   ask patches [
     generate-field
   ]
@@ -89,18 +88,25 @@ to go
   tick
 end
 
-to place-streetlights
+to place-streetlights [radius]
   ask streetlights [
     let potential-patches patches with [is-sidewalk?]
+    let radius radius + minimum-di
     ifelse any? potential-patches [
-      let random-patch one-of potential-patches
-      move-to random-patch
+      ; Find a suitable patch where the streetlight won't overlap with existing ones
+      let suitable-patch one-of potential-patches with [not any? streetlights in-radius ]
+      ifelse suitable-patch != nobody [
+        move-to suitable-patch
+      ] [
+        print "No suitable patch found to place the streetlight without overlapping!"
+      ]
     ] [
       ; Handle the case where there are no sidewalk patches available
       print "No sidewalk patches available for placing streetlights!"
     ]
   ]
 end
+
 
 to draw-grass
   ask patches [
@@ -186,10 +192,10 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-335
-30
-998
-444
+471
+59
+1134
+473
 -1
 -1
 5.0
@@ -249,8 +255,8 @@ NIL
 SLIDER
 30
 435
-220
-468
+209
+469
 brightness
 brightness
 1
@@ -310,13 +316,13 @@ NIL
 
 SLIDER
 30
-390
-220
-423
+392
+209
+426
 number-of-streetlights
 number-of-streetlights
 1
-20
+10
 5.0
 1
 1
@@ -333,6 +339,21 @@ number-of-pedestrians
 1
 50
 1.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+218
+392
+391
+426
+minimum-distance
+minimum-distance
+0
+10
+5.0
 1
 1
 NIL
