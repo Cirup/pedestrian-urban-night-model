@@ -11,7 +11,7 @@ breed [ poles pole ]
 
 pedestrians-own [
   speed ; walking speed or pace of the pedestrian
-  visibility ; determines how far a pedestrian can see
+  vision-range ; determines how far a pedestrian can see
   fear-tolerance; determines fear threshold a pedestrian can take to walk in that area
 ]
 
@@ -81,13 +81,15 @@ to create-people
   let starting-patch patches with[starting-point? = true]
   let count-starting-point count starting-patch
   let pedestrian-each-starting-point ceiling(number-of-pedestrians / count-starting-point)
-
+  let destination-coords patches with [destination-point? = true]
 
   ifelse count-starting-point < number-of-pedestrians[
     ask starting-patch[
       sprout-pedestrians pedestrian-each-starting-point[
+        set shape "person"
         set size 2
         set color white
+        let destination-one-of destination-coords
       ]
     ]
   ]
@@ -95,11 +97,17 @@ to create-people
   [
     let selected-patch one-of starting-patch
     create-pedestrians number-of-pedestrians[
+      set shape "person"
       set size 2
       set color white
       move-to selected-patch
+      let destination-one-of destination-coords
     ]
    ]
+
+  ask pedestrians[
+    face one-of destination-coords
+  ]
 end
 
 to generate-field ;; patch procedure
@@ -121,7 +129,11 @@ to set-field [p] ;; streetlight procedure; input p is a patch
   ] [
     set amount amount / rsquared
   ]
-  ask p [ set light-level light-level + amount ]
+  ask p [
+    if [is-road? or is-sidewalk?] of p [
+    set light-level light-level + amount
+    ]
+  ]
 end
 
 
@@ -200,12 +212,12 @@ to draw-road
 
   ;horizontal roads
   create-roads 30 65 31 32;quadrant 1
-  create-roads 30 65 10 11;quadrant 1
-  create-roads -65 -53 -32 -30 ;quadrant 3
+  ;create-roads 30 65 10 11;quadrant 1
+  ;create-roads -65 -53 -32 -30 ;quadrant 3
   create-roads -55 -30 11 13;quadrant 2
   create-roads -45 27 -20 -16 ;quadrant 3 and 4
   create-roads -65 28 23 25; quadrant 1 through 2
-  create-roads 39 65 -27 -25
+  ;create-roads 39 65 -27 -25
 
   ; mark the outer edges of grass patches as red
   ask patches with [is-grass?] [
@@ -237,32 +249,103 @@ end
 ; ======================= Pedestrian Behaviour =========================
 to go
 
-  if count pedest
-   create-people
+  let destination-coords patches with [destination-point? = true]
+  let dest one-of destination-coords
 
+
+  if count pedestrians = 0[
+   create-people
+  ]
+
+
+  ask pedestrians[
+    if patch-here != dest[
+
+      set vision-range vision
+      let is-true false
+      let vision-angle 90
+      let patches-in-vision patches in-cone vision-range vision-angle
+      let patches-in-front patches in-cone 2 vision-angle
+      let grass-ahead any? patches-in-front with [is-grass?] ; returns true or false
+      let side-walk-patch any? patches-in-front with [is-sidewalk?]
+
+      ;ask patches-in-front[
+      ;  set pcolor blue
+      ;]
+
+      if(patches-in-front != nobody) [
+         ifelse grass-ahead[
+            ;let grass-patch patches in-cone 2 vision-angle with [is-grass?]
+            ;check-rotation grass-patch
+
+          ifelse side-walk-patch [
+            let face-side-walk one-of patches-in-front with [is-sidewalk?]
+            ifelse face-side-walk != nobody [
+            face face-side-walk
+            print "facing sidewalk"
+            ][
+              rt random 90
+              lt random 90
+            ]
+
+          ][
+            rt random 90
+            lt random 90
+          ]
+
+
+          ] [
+
+            fd 1
+            face dest
+          ]
+
+      ; set is-true road-is-safe patches-in-vision
+      ; fd 1
+      ask patches-in-vision[
+        set pcolor red
+      ]
+
+      ;ask patches-in-front[
+      ;  set pcolor blue
+      ;]
+
+      ]
+    ]
+
+
+]
   tick
 end
 
-to move-pedestrian
-  ; prioritize choosing to move where there is light
-  ask pedestrians [
-    rt random 10
-    lt random 10
-    fd 1
+to check-rotation [grass-infront]
+
+  if grass-infront != nobody [
+    let agent-xcor [xcor] of pedestrians
+    let agent-ycor [ycor] of pedestrians
+    let grass-xcor [pxcor] of grass-infront
+    let grass-ycor  [pycor] of grass-infront
+
+
+
+
   ]
+
+
+
+
+
 end
 
-to mark-sight
-  let patch-ahead-visible vision / 4
-  let dist 1
-  let a1 0
 
-  while [dist <= visibility]
-  [
-    print "TEST"
-    set dist dist + 1
-  ]
+
+to-report road-is-safe [visible-road]
+  let total-light sum [light-level] of visible-road
+  print total-light
+
+  ifelse total-light > 1 [report true] [report false]
 end
+
 
 to-report number-of-lanes
   ; To make the number of lanes easily adjustable, remove this
@@ -315,23 +398,6 @@ NIL
 NIL
 1
 
-BUTTON
-160
-235
-225
-270
-go
-go
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SLIDER
 30
 435
@@ -341,7 +407,7 @@ brightness
 brightness
 1
 10
-4.0
+1.0
 1
 1
 lum
@@ -403,7 +469,7 @@ number-of-streetlights
 number-of-streetlights
 1
 10
-10.0
+6.0
 1
 1
 NIL
@@ -467,19 +533,19 @@ vision
 vision
 0
 20
-11.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-195
-155
-285
-189
+175
+230
+238
+263
 NIL
-mark-sight
+go
 NIL
 1
 T
