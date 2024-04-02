@@ -324,8 +324,8 @@ to random-rotate [patches-in-vision]
 
   ifelse road-patches > grass-patches [
     ifelse random 2 = 0 [
-      rt 150
-    ] [ lt 150]
+      rt 120
+    ] [ lt 1]
   ] [
     ifelse random 2 = 0 [
       ; Rotate left by 90 degrees
