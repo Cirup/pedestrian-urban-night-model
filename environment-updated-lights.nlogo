@@ -26,6 +26,7 @@ patches-own [
   light-level
   starting-point?
   destination-point?
+  stay-counter
 ]
 
 to setup
@@ -83,7 +84,7 @@ to create-people
   let pedestrian-each-starting-point ceiling(number-of-pedestrians / count-starting-point)
   let destination-coords patches with [destination-point? = true]
 
-  ifelse count-starting-point < number-of-pedestrians[
+  ifelse count-starting-point <= number-of-pedestrians[
     ask starting-patch[
       sprout-pedestrians pedestrian-each-starting-point[
         set shape "person"
@@ -118,7 +119,11 @@ to generate-field ;; patch procedure
   ]
 
   ;; uncomment to see accurate representation of how light is distributed
-; set pcolor scale-color yellow (sqrt light-level) 0.1 ( sqrt ( 20 * max [intensity] of streetlights ) )
+;  ifelse not is-grass?[
+;    set pcolor scale-color yellow (sqrt light-level) 0.1 ( sqrt ( 20 * max [intensity] of streetlights ) )
+;  ] [
+;    set pcolor grey - 3
+;  ]
 end
 
 to set-field [p] ;; streetlight procedure; input p is a patch
@@ -209,15 +214,16 @@ to draw-road
   create-roads -45 -41 -19 -3 ;quadrant 3
   create-roads -60 -59 -31 -1; quadrant 4
   create-roads 55 57 -25 0;quadrant 4
+  create-roads 61 65 2 30;
 
   ;horizontal roads
   create-roads 30 65 31 32;quadrant 1
-  ;create-roads 30 65 10 11;quadrant 1
-  ;create-roads -65 -53 -32 -30 ;quadrant 3
+  create-roads 30 65 10 11;quadrant 1
+  create-roads -65 27 -32 -30 ;quadrant 3
   create-roads -55 -30 11 13;quadrant 2
   create-roads -45 27 -20 -16 ;quadrant 3 and 4
   create-roads -65 28 23 25; quadrant 1 through 2
-  ;create-roads 39 65 -27 -25
+  create-roads 31 65 -27 -25
 
   ; mark the outer edges of grass patches as red
   ask patches with [is-grass?] [
@@ -252,98 +258,126 @@ to go
   let destination-coords patches with [destination-point? = true]
   let dest one-of destination-coords
 
-
   if count pedestrians = 0[
    create-people
   ]
 
 
   ask pedestrians[
+
+
+    let vision-angle 90 ; average vision-angle
+    let streetlights-in-vision streetlights in-cone vision-range vision-angle ; cone shape vision of pedestrians
+    let patches-in-vision streetlights in-cone vision-range vision-angle
+    let patches-in-front patches in-cone 2 vision-angle ; patches in front of pedestrian
+    set vision-range vision ;initialize vision-range
+
     if patch-here != dest[
 
-      set vision-range vision
-      let is-true false
-      let vision-angle 90
-      let patches-in-vision patches in-cone vision-range vision-angle
-      let patches-in-front patches in-cone 2 vision-angle
-      let grass-ahead any? patches-in-front with [is-grass?] ; returns true or false
-      let side-walk-patch any? patches-in-front with [is-sidewalk?]
 
-      ;ask patches-in-front[
-      ;  set pcolor blue
-      ;]
 
       if(patches-in-front != nobody) [
-         ifelse grass-ahead[
-            ;let grass-patch patches in-cone 2 vision-angle with [is-grass?]
-            ;check-rotation grass-patch
-
-          ifelse side-walk-patch [
-            let face-side-walk one-of patches-in-front with [is-sidewalk?]
-            ifelse face-side-walk != nobody [
-            face face-side-walk
-            print "facing sidewalk"
-            ][
-              rt random 90
-              lt random 90
-            ]
-
-          ][
-            rt random 90
-            lt random 90
-          ]
-
-
-          ] [
-
+        ifelse any? patches-in-front with [is-grass?][ ; check if grass is detected in returns true or false
+                                                       ;let grass-patch patches in-cone 2 vision-angle with [is-grass?]
+                                                       ;check-rotation grass-patch
+          random-rotate
+          let check-if-no-more-wall patches in-cone 2 vision-angle
+          let check-after-rotate any? check-if-no-more-wall with [is-grass?] ; returns true or false
+          ifelse not check-after-rotate[
             fd 1
-            face dest
-          ]
+          ] [ random-rotate ]
 
-      ; set is-true road-is-safe patches-in-vision
+        ] [
+
+          fd 1
+        ]
+
+
       ; fd 1
-      ask patches-in-vision[
-        set pcolor red
+
+;        ask patches-in-vision[
+;          set pcolor red
+;        ]
+
+;      ask patches-in-front[
+;        set pcolor blue
+;      ]
+
       ]
 
-      ;ask patches-in-front[
-      ;  set pcolor blue
-      ;]
 
-      ]
+    affected-by-light streetlights-in-vision vision-range vision-angle dest
+    road-is-safe patches-in-vision
+    handle-stuck-agents
     ]
-
 
 ]
   tick
 end
 
-to check-rotation [grass-infront]
-
-  if grass-infront != nobody [
-    let agent-xcor [xcor] of pedestrians
-    let agent-ycor [ycor] of pedestrians
-    let grass-xcor [pxcor] of grass-infront
-    let grass-ycor  [pycor] of grass-infront
 
 
-
-
+to random-rotate
+  ifelse random 2 = 0 [
+    ; Rotate left by 90 degrees
+    lt 90
+  ] [
+    ; Rotate right by 90 degrees
+    rt 90
   ]
+end
 
+to affected-by-light[visible-streetlights detection-range angle destination]
 
+  let angle-to-dest towards destination
+  let angle-to-streetlight 0
+  let detected-streetlight nobody
+  let light-detected any? visible-streetlights
+  let average-angle 0
+  set detected-streetlight min-one-of streetlights in-cone detection-range angle [distance myself]
 
+  ifelse light-detected[
 
+    ifelse detected-streetlight = nobody [
+      set heading angle-to-dest
+    ] [
+    set angle-to-streetlight towards detected-streetlight
+
+    set average-angle (angle-to-streetlight + angle-to-dest) / 2
+    set heading average-angle
+    ]
+  ] [ set heading angle-to-dest]
 
 end
 
 
 
-to-report road-is-safe [visible-road]
+to road-is-safe [visible-road]
   let total-light sum [light-level] of visible-road
-  print total-light
 
-  ifelse total-light > 1 [report true] [report false]
+  ifelse total-light >= 1 or any? streetlights in-radius ((brightness + 10 )/ 2)[
+    set color white
+  ] [ set color red ]
+end
+
+to handle-stuck-agents
+    ; Get the current patch the turtle is on
+  let current-patch patch-here
+
+  ; Increment the stay-counter for the current patch
+  ask current-patch [
+    set stay-counter stay-counter + 1
+  ]
+
+  ; If the stay-counter for the current patch reaches 10, rotate
+  if [stay-counter] of current-patch = 10 [
+    random-rotate
+    fd 1
+    ; Reset the stay-counter for the current patch
+    ask current-patch [
+      set stay-counter 0
+    ]
+  ]
 end
 
 
@@ -355,9 +389,9 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-335
+336
 30
-998
+1149
 544
 -1
 -1
@@ -371,8 +405,8 @@ GRAPHICS-WINDOW
 0
 0
 1
--65
-65
+-80
+80
 -50
 50
 0
@@ -407,7 +441,7 @@ brightness
 brightness
 1
 10
-1.0
+6.0
 1
 1
 lum
@@ -469,7 +503,7 @@ number-of-streetlights
 number-of-streetlights
 1
 10
-6.0
+5.0
 1
 1
 NIL
@@ -484,7 +518,7 @@ number-of-pedestrians
 number-of-pedestrians
 1
 50
-1.0
+3.0
 1
 1
 NIL
@@ -533,7 +567,7 @@ vision
 vision
 0
 20
-10.0
+20.0
 1
 1
 NIL
@@ -546,7 +580,7 @@ BUTTON
 263
 NIL
 go
-NIL
+T
 1
 T
 OBSERVER
