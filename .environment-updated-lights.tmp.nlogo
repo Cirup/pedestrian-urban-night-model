@@ -340,24 +340,6 @@ to random-rotate [patches-in-vision]
   ]
 end
 
-to affected-by-light [visible-streetlights detection-range angle destination]
-  let angle-to-dest towards destination
-  let light-detected any? visible-streetlights
-
-  ifelse light-detected [
-    let detected-streetlight min-one-of visible-streetlights [distance myself]
-    let angle-to-streetlight towards detected-streetlight
-
-    ; Calculate the average angle between the destination and the detected streetlight
-    let average-angle (angle-to-streetlight + angle-to-dest) / 2
-
-    ; Set the heading of the agent to the average angle
-    set heading average-angle
-  ] [
-    ; If no streetlight is detected, set the heading of the agent towards the destination
-    set heading angle-to-dest
-  ]
-end
 
 
 to road-is-safe [visible-road]
