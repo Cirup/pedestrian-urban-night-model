@@ -7,7 +7,6 @@ globals [
 ; streetlights and pedestrians are both breeds of turtles
 breed [ streetlights streetlight ]
 breed [ pedestrians pedestrian ]
-breed [ poles pole ]
 
 pedestrians-own [
   speed ; walking speed or pace of the pedestrian
@@ -39,76 +38,91 @@ to setup
 
   draw-grass
   draw-road
+  create-destination-point
+  create-starting-points
+  create-people
+
+  let light-size brightness + 10
+
+  create-streetlights number-of-streetlights [
+    set color [255 255 0 100]
+    set intensity brightness
+    set size light-size
+  ]
+
+  place-streetlights light-size
+
+  ask patches [
+    generate-field
+  ]
+
   reset-ticks
 end
 
-to create-start-point
-
-  print "Select your starting point (Sidewalk)"
-  while [not mouse-down?] [ display ]
-  let clicked-patch patch mouse-xcor mouse-ycor
-
-  ifelse [is-sidewalk? or is-road?] of clicked-patch[
-  ask clicked-patch [
-    ; When the user clicks on a patch, change its color to red
-      set pcolor red
-      ; Set the variable "start-point" to true for this patch
-      set starting-point? true
+to create-starting-points
+  let selected-patches []
+  repeat 3 [
+    let random-patch one-of patches with [is-sidewalk? and not member? self selected-patches]
+    if random-patch != nobody [
+      ask random-patch [
+        set pcolor red
+        set starting-point? true
+      ]
+      set selected-patches lput random-patch selected-patches
     ]
-  ][
-  print "You can only put starting point in a sidewalk"
   ]
 end
 
 ; Create Destination Point
-to create-destination-point
-  print "Select your starting point (Sidewalk)"
-  while [not mouse-down?] [ display ]
-  let clicked-patch patch mouse-xcor mouse-ycor
+to create--point
+  let potential-end-points patches with [is-sidewalk? and not starting-point?]
+  let starting-patches patches with [starting-point?]
+  let furthest-patch nobody
+  let max-distance 0
 
-  ifelse [is-sidewalk? or is-road?] of clicked-patch[
-  ask clicked-patch [
-    ; When the user clicks on a patch, change its color to red
-      set pcolor blue
-      ; Set the variable "start-point" to true for this patch
-      set destination-point? true
+  ask potential-end-points [
+    let current-patch self
+    let current-patch-distance 0
+
+    ask starting-patches [
+      let dist distance current-patch
+      set current-patch-distance current-patch-distance + dist ; Accumulate the distances
     ]
-  ][
-  print "You can only put starting point in a sidewalk"
+
+    ; Update furthest patch and max distance if the current patch is further
+    if current-patch-distance > max-distance [
+      set max-distance current-patch-distance
+      set furthest-patch current-patch
+    ]
+  ]
+
+  ask furthest-patch [
+    set pcolor lime
+    set destination-point? true
   ]
 end
 
 to create-people
-  let starting-patch patches with[starting-point? = true]
-  let count-starting-point count starting-patch
-  let pedestrian-each-starting-point ceiling(number-of-pedestrians / count-starting-point)
-  let destination-coords patches with [destination-point? = true]
+  let starting-patches patches with [starting-point?]
+  let count-starting-point count starting-patches
+  let pedestrian-each-starting-point ceiling (number-of-pedestrians / count-starting-point)
 
-  ifelse count-starting-point <= number-of-pedestrians[
-    ask starting-patch[
+
+  ifelse count-starting-point < number-of-pedestrians[
+    ask starting-patches [
       sprout-pedestrians pedestrian-each-starting-point[
-        set shape "person"
         set size 2
         set color white
-        let destination-one-of destination-coords
       ]
     ]
-  ]
-    ;else
-  [
-    let selected-patch one-of starting-patch
+  ] [
+    let selected-patch one-of starting-patches
     create-pedestrians number-of-pedestrians[
-      set shape "person"
       set size 2
       set color white
       move-to selected-patch
-      let destination-one-of destination-coords
     ]
    ]
-
-  ask pedestrians[
-    face one-of destination-coords
-  ]
 end
 
 to generate-field ;; patch procedure
@@ -136,38 +150,23 @@ to set-field [p] ;; streetlight procedure; input p is a patch
   ]
   ask p [
     if [is-road? or is-sidewalk?] of p [
-    set light-level light-level + amount
+      set light-level light-level + amount
     ]
   ]
 end
 
-
-to setup-all-streetlights
-  clear-streetlights
-  create-streetlights number-of-streetlights [
-    set color [255 255 0 100]
-    set intensity brightness
-    set size brightness + 10
-  ]
-
-  place-streetlights
-  ask patches [
-    generate-field
-  ]
-end
-
-to clear-streetlights
-  ask streetlights [
-    die
-  ]
-end
-
-to place-streetlights
+to place-streetlights [radius]
   ask streetlights [
     let potential-patches patches with [is-sidewalk?]
+    set radius radius + minimum-distance
     ifelse any? potential-patches [
-      let random-patch one-of potential-patches
-      move-to random-patch
+      ; Find a suitable patch where the streetlight won't overlap with existing ones
+      let suitable-patch one-of potential-patches with [not any? streetlights in-radius radius]
+      ifelse suitable-patch != nobody [
+        move-to suitable-patch
+      ] [
+        print "No suitable patch found to place the streetlight without overlapping!"
+      ]
     ] [
       ; Handle the case where there are no sidewalk patches available
       print "No sidewalk patches available for placing streetlights!"
@@ -182,6 +181,8 @@ to draw-grass
     set is-grass? true
     set is-road? false
     set is-sidewalk? false
+    set starting-point? false
+    set destination-point? false
   ]
 end
 
@@ -194,6 +195,8 @@ to draw-road
     set is-grass? false
     set is-sidewalk? false
     set is-road? true
+    set starting-point? false
+    set destination-point? false
   ]
 
   ; Mark sidewalk patches
@@ -226,7 +229,6 @@ to draw-road
   create-roads 31 65 -27 -25
   create-roads -40 -3 37 40
 
-  ; mark the outer edges of grass patches as red
   ask patches with [is-grass?] [
     let edge-neighbors neighbors with [not is-grass?]
     ask edge-neighbors [
@@ -250,6 +252,8 @@ to create-roads [x1 x2 y1 y2]
     set is-grass? false
     set is-sidewalk? false
     set is-road? true
+    set starting-point? false
+    set destination-point? false
   ]
 end
 
@@ -324,8 +328,8 @@ to random-rotate [patches-in-vision]
 
   ifelse road-patches > grass-patches [
     ifelse random 2 = 0 [
-      rt 120
-    ] [ lt 1]
+      rt 150
+    ] [ lt 150]
   ] [
     ifelse random 2 = 0 [
       ; Rotate left by 90 degrees
@@ -407,10 +411,10 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-336
-30
-1149
-544
+430
+40
+1243
+554
 -1
 -1
 5.0
@@ -436,9 +440,9 @@ ticks
 BUTTON
 35
 95
-117
+100
 128
-draw-env
+setup
 setup
 NIL
 1
@@ -452,14 +456,14 @@ NIL
 
 SLIDER
 30
-435
+235
 220
-468
+268
 brightness
 brightness
 1
 10
-6.0
+5.0
 1
 1
 lum
@@ -470,53 +474,26 @@ TEXTBOX
 68
 184
 86
-Setup Grass & Roads
+Setup
 11
 0.0
 1
 
 TEXTBOX
 30
-365
+170
 180
-383
+188
 Streetlight Settings\n
 11
 0.0
 1
 
-TEXTBOX
-30
-160
-180
-178
-Setup Streetlight(s)
-11
-0.0
-1
-
-BUTTON
-35
-235
-130
-268
-setup-all
-setup-all-streetlights
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SLIDER
 30
-390
+195
 220
-423
+228
 number-of-streetlights
 number-of-streetlights
 1
@@ -528,59 +505,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-480
-198
-513
+30
+320
+205
+353
 number-of-pedestrians
 number-of-pedestrians
 1
-50
-50.0
+20
+10.0
 1
 1
 NIL
 HORIZONTAL
 
-BUTTON
-40
-310
-127
-343
-start-point
-create-start-point
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-150
-310
-242
-343
-destination
-create-destination-point
-NIL
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
 SLIDER
-25
-530
-197
-563
+30
+365
+205
+398
 vision
 vision
 0
@@ -592,10 +535,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-175
-230
-238
-263
+110
+95
+173
+128
 NIL
 go
 T
@@ -606,6 +549,31 @@ NIL
 NIL
 NIL
 NIL
+1
+
+SLIDER
+230
+195
+402
+228
+minimum-distance
+minimum-distance
+0
+10
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+TEXTBOX
+30
+293
+205
+311
+Pedestrian Settings\n
+11
+0.0
 1
 
 @#$#@#$#@
