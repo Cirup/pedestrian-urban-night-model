@@ -22,9 +22,9 @@ patches-own [
   is-grass? ; boolean attribute that determines whether or not a patch is a grass
   is-road? ; boolean attribute that determines whether or not a patch is a road
   is-sidewalk? ; boolean attribute that determines whether or not a patch is a sidewalk
-  light-level
-  starting-point?
-  destination-point?
+  starting-point? ; boolean attribute that determines whether or not a patch is a starting-point
+  destination-point? ; boolean attribute that determines whether or not a patch is a destination-point
+  light-level ; amount of light on a patch
   stay-counter
 ]
 
@@ -210,23 +210,23 @@ to draw-road
   ;65x 40y
 
   ;vertical roads
-  create-roads 28 30 -50 40 ;quadrant 1 through 4
-  create-roads -2 0 1 65;quadrant 1 and 2
+  create-roads 28 30 -50 40 ; quadrant 1 through 4
+  create-roads -2 0 1 65 ; quadrant 1 and 2
   create-roads -29 -28 1 23 ; quadrant 2
-  create-roads -40 -38 23 40; quadrant 2
-  create-roads -55 -53 1 11;quadrant 2 through 3
-  create-roads -45 -41 -19 -3 ;quadrant 3
-  create-roads -60 -59 -31 -1; quadrant 4
-  create-roads 55 57 -25 0;quadrant 4
-  create-roads 61 65 2 30;
+  create-roads -40 -38 23 40 ; quadrant 2
+  create-roads -55 -53 1 11 ; quadrant 2 through 3
+  create-roads -45 -41 -19 -3 ; quadrant 3
+  create-roads -60 -59 -31 -1 ; quadrant 4
+  create-roads 55 57 -25 0 ; quadrant 4
+  create-roads 61 65 2 30
 
   ;horizontal roads
-  create-roads 30 65 31 32;quadrant 1
-  create-roads 30 65 10 11;quadrant 1
-  create-roads -65 27 -32 -30 ;quadrant 3
-  create-roads -55 -30 11 13;quadrant 2
-  create-roads -45 27 -20 -16 ;quadrant 3 and 4
-  create-roads -80 28 23 25; quadrant 1 through 2
+  create-roads 30 65 31 32 ; quadrant 1
+  create-roads 30 65 10 11 ; quadrant 1
+  create-roads -65 27 -32 -30 ; quadrant 3
+  create-roads -55 -30 11 13 ; quadrant 2
+  create-roads -45 27 -20 -16 ; quadrant 3 and 4
+  create-roads -80 28 23 25 ; quadrant 1 through 2
   create-roads 31 65 -27 -25
   create-roads -40 -3 37 40
 
@@ -258,7 +258,6 @@ to create-roads [x1 x2 y1 y2]
   ]
 end
 
-; ======================= Pedestrian Behaviour =========================
 to go
 
   let destination-coords patches with [destination-point? = true]
@@ -268,10 +267,7 @@ to go
    create-people
   ]
 
-
   ask pedestrians[
-
-
     let vision-angle 60 ; average vision-angle
     let streetlights-in-vision streetlights in-cone vision-range vision-angle ; cone shape vision of pedestrians
     let patches-in-vision streetlights in-cone vision-range vision-angle
@@ -279,8 +275,6 @@ to go
     set vision-range vision ;initialize vision-range
 
     if patch-here != dest[
-
-
 
       if(patches-in-front != nobody) [
         ifelse any? patches-in-front with [is-grass?][ ; check if grass is detected in returns true or false
@@ -294,13 +288,10 @@ to go
           ] [random-rotate patches-in-vision]
 
         ] [
-
           fd 1
         ]
 
-
       ; fd 1
-
 ;        ask patches-in-vision[
 ;          set pcolor red
 ;        ]
@@ -311,7 +302,6 @@ to go
 
       ]
 
-
     affected-by-light streetlights-in-vision vision-range vision-angle dest
     road-is-safe patches-in-vision
     handle-stuck-agents patches-in-vision
@@ -320,8 +310,6 @@ to go
 ]
   tick
 end
-
-
 
 to random-rotate [patches-in-vision]
   let grass-patches count patches-in-vision with [is-grass?]
@@ -340,10 +328,7 @@ to random-rotate [patches-in-vision]
       rt 90
     ]
   ]
-
 end
-
-
 
 to affected-by-light[visible-streetlights detection-range angle destination]
 
@@ -367,8 +352,6 @@ to affected-by-light[visible-streetlights detection-range angle destination]
   ] [ set heading angle-to-dest]
 
 end
-
-
 
 to road-is-safe [visible-road]
   let total-light sum [light-level] of visible-road
@@ -400,8 +383,6 @@ end
 
 to-report coin-flip
 
-
-
 end
 
 to-report number-of-lanes
@@ -412,9 +393,9 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-430
+440
 40
-1243
+1253
 554
 -1
 -1
@@ -507,9 +488,9 @@ HORIZONTAL
 
 SLIDER
 30
-320
+340
 205
-353
+373
 number-of-pedestrians
 number-of-pedestrians
 1
@@ -522,9 +503,9 @@ HORIZONTAL
 
 SLIDER
 30
-365
+385
 205
-398
+418
 vision
 vision
 0
@@ -569,9 +550,9 @@ HORIZONTAL
 
 TEXTBOX
 30
-293
+313
 205
-311
+331
 Pedestrian Settings\n
 11
 0.0
