@@ -12,7 +12,7 @@ pedestrians-own [
   speed ; walking speed or pace of the pedestrian
   vision-range ; determines how far a pedestrian can see
   vision-angle ; determines how wide/narrow the pedestrian can see
-  fear-tolerance; determines fear threshold a pedestrian can take to walk in that area
+  fear-tolerance; determines fear threshold a pedestrian can take to walk in that
 ]
 
 streetlights-own [
@@ -40,13 +40,13 @@ to setup
   draw-grass
   draw-road
 
-  create-starting-points
-  create-destination-point
-  create-people
-
   let light-size brightness + 10
 
   ifelse model-version = "pedestrian-simulation" [
+    create-starting-points
+    create-destination-point
+    create-people
+
     create-streetlights number-of-streetlights [
       set color [255 255 0 100]
       set intensity brightness
@@ -69,11 +69,86 @@ to setup
   ]
 
   ask pedestrians [
-    set vision-angle 90 ; average vision-angle
+    set vision-angle 60 ; average vision-angle
     set vision-range vision ; initialize vision-range
   ]
 
   reset-ticks
+end
+
+to setup-roads
+  clear-all
+
+  set-patch-size 5
+  set current-number-of-streetlights 0
+  set-default-shape streetlights "circle"
+  set scale-factor 10
+
+  draw-grass
+  draw-road
+  reset-ticks
+end
+
+to clear-streetlights
+  ask streetlights [ die ]
+end
+
+to setup-all-streetlights
+  clear-streetlights
+  let light-size brightness + 10
+
+  ifelse model-version = "light-visualization" [
+    create-streetlights number-of-streetlights [
+      set color [255 255 0 0]
+      set intensity brightness
+      set size light-size
+    ]
+  ] [
+    create-streetlights number-of-streetlights [
+      set color [255 255 0 100]
+      set intensity brightness
+      set size light-size
+    ]
+  ]
+
+  place-streetlights light-size
+
+  ask patches [
+    generate-field
+  ]
+  reset-ticks
+end
+
+to setup-one-streetlight
+  let light-size brightness + 10
+  ; wait for the user to click the mouse
+  while [not mouse-down?] [ display ]
+
+  ; get the patch that the user clicked on
+  let clicked-patch patch mouse-xcor mouse-ycor
+
+  ifelse current-number-of-streetlights < number-of-streetlights [
+    ifelse [is-sidewalk?] of clicked-patch [
+
+      create-streetlights 1 [
+        set color [255 255 0 100]
+        set intensity brightness
+        set size light-size
+        move-to clicked-patch
+      ]
+
+      set current-number-of-streetlights current-number-of-streetlights + 1
+      print current-number-of-streetlights
+    ] [
+      print "You can only place a streetlight on a sidewalk."
+    ]
+  ] [
+    print "You can't place anymore streetlights."
+  ]
+
+  ask patches [
+    generate-field
+  ]
 end
 
 to go
@@ -81,7 +156,15 @@ to go
   let destination-coords patches with [destination-point? = true]
   let dest one-of destination-coords
 
-  if all? pedestrians [patch-here = dest] [
+  if count pedestrians = 0 [
+    create-people
+    ask pedestrians [
+      set vision-angle 90 ; average vision-angle
+      set vision-range vision ; initialize vision-range
+    ]
+  ]
+
+  if all? pedestrians [ patch-here = dest ] [
     stop
   ]
 
@@ -92,7 +175,6 @@ to go
     let patches-in-front patches in-cone 2 vision-angle ; patches in front of pedestrian
 
     if patch-here != dest[
-
       if(patches-in-front != nobody) [
         ifelse any? patches-in-front with [is-grass?][ ; check if grass is detected in returns true or false
                                                        ;let grass-patch patches in-cone 2 vision-angle with [is-grass?]
@@ -107,21 +189,20 @@ to go
         ] [
           fd 1
         ]
-
       ]
 
-    affected-by-light streetlights-in-vision vision-range vision-angle dest
-    road-is-safe patches-in-vision
-    handle-stuck-agents patches-in-vision
+      affected-by-light streetlights-in-vision vision-range vision-angle dest
+      road-is-safe patches-in-vision
+      handle-stuck-agents patches-in-vision
     ]
 
-]
+  ]
   tick
 end
 
 to create-starting-points
   let selected-patches []
-  repeat 3 [
+  repeat number-of-starting-points [
     let random-patch one-of patches with [is-sidewalk? and not member? self selected-patches]
     if random-patch != nobody [
       ask random-patch [
@@ -131,6 +212,7 @@ to create-starting-points
       set selected-patches lput random-patch selected-patches
     ]
   ]
+  reset-ticks
 end
 
 to create-destination-point
@@ -159,13 +241,75 @@ to create-destination-point
     set pcolor lime
     set destination-point? true
   ]
+  reset-ticks
+end
+
+to clear-starting-points
+  ask patches with [ starting-point? ] [
+    set starting-point? false
+    set pcolor grey
+  ]
+  reset-ticks
+end
+
+to clear-destination-point
+  ask patches with [ destination-point? ] [
+    set destination-point? false
+    set pcolor grey
+  ]
+  reset-ticks
+end
+
+to setup-all-starting-points
+  clear-starting-points
+  clear-destination-point
+  clear-pedestrians
+  create-starting-points
+  create-destination-point
+  create-people
+  ask pedestrians [
+    set vision-angle 90 ; average vision-angle
+    set vision-range vision ; initialize vision-range
+  ]
+  reset-ticks
+end
+
+to clear-pedestrians
+  ask pedestrians [ die ]
+end
+
+to setup-one-starting-point
+  while [not mouse-down?] [ display ]
+  let clicked-patch patch mouse-xcor mouse-ycor
+  ifelse [ is-sidewalk? ] of clicked-patch [
+    ask clicked-patch [
+      set pcolor red
+      set starting-point? true
+    ]
+  ] [
+    print "You can only place starting points on sidewalks."
+  ]
+  reset-ticks
+end
+
+to setup-one-destination-point
+  while [ not mouse-down? ] [ display ]
+  let clicked-patch patch mouse-xcor mouse-ycor
+  ifelse [ is-sidewalk? ] of clicked-patch [
+    ask clicked-patch [
+      set pcolor lime
+      set destination-point? true
+    ]
+  ][
+    print "You can only place destination points on sidewalks."
+  ]
+  reset-ticks
 end
 
 to create-people
   let starting-patches patches with [starting-point?]
   let count-starting-point count starting-patches
   let pedestrian-each-starting-point ceiling (number-of-pedestrians / count-starting-point)
-
 
   ifelse count-starting-point < number-of-pedestrians[
     ask starting-patches [
@@ -273,7 +417,7 @@ to draw-road
   ;65x 40y
 
   ;vertical roads
-  create-roads 28 30 -50 40 ; quadrant 1 through 4
+  create-roads 28 30 -50 32 ; quadrant 1 through 4
   create-roads -2 0 1 65 ; quadrant 1 and 2
   create-roads -29 -28 1 23 ; quadrant 2
   create-roads -40 -38 23 40 ; quadrant 2
@@ -282,15 +426,17 @@ to draw-road
   create-roads -60 -59 -31 -1 ; quadrant 4
   create-roads 55 57 -25 0 ; quadrant 4
   create-roads 61 65 2 30
+  create-roads -80 -74 2  21
+  create-roads -45 -42 -29 -22
 
   ;horizontal roads
   create-roads 30 65 31 32 ; quadrant 1
   create-roads 30 65 10 11 ; quadrant 1
-  create-roads -65 27 -32 -30 ; quadrant 3
-  create-roads -55 -30 11 13 ; quadrant 2
+  create-roads -60 27 -32 -30 ; quadrant 3
+  create-roads -75 -30 11 13 ; quadrant 2
   create-roads -45 27 -20 -16 ; quadrant 3 and 4
   create-roads -80 28 23 25 ; quadrant 1 through 2
-  create-roads 31 65 -27 -25
+  create-roads 31 57 -27 -25
   create-roads -40 -3 37 40
 
   ask patches with [is-grass?] [
@@ -340,6 +486,24 @@ to random-rotate [patches-in-vision]
   ]
 end
 
+to affected-by-light [visible-streetlights detection-range angle destination]
+  let angle-to-dest towards destination
+  let light-detected any? visible-streetlights
+
+  ifelse light-detected [
+    let detected-streetlight min-one-of visible-streetlights [distance myself]
+    let angle-to-streetlight towards detected-streetlight
+
+    ; Calculate the average angle between the destination and the detected streetlight
+    let average-angle (angle-to-streetlight + angle-to-dest) / 2
+
+    ; Set the heading of the agent to the average angle
+    set heading average-angle
+  ] [
+    ; If no streetlight is detected, set the heading of the agent towards the destination
+    set heading angle-to-dest
+  ]
+end
 
 
 to road-is-safe [visible-road]
@@ -386,10 +550,10 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-419
-43
-1232
-557
+408
+33
+1148
+501
 -1
 -1
 5.0
@@ -406,17 +570,17 @@ GRAPHICS-WINDOW
 80
 -50
 50
-0
-0
+1
+1
 1
 ticks
 30.0
 
 BUTTON
-34
-136
-99
-169
+221
+133
+287
+168
 setup
 setup
 NIL
@@ -430,10 +594,10 @@ NIL
 1
 
 SLIDER
-29
-256
-219
-289
+35
+266
+211
+300
 brightness
 brightness
 1
@@ -445,45 +609,35 @@ lum
 HORIZONTAL
 
 TEXTBOX
-33
-110
-170
-129
-Setup
-11
-0.0
-1
-
-TEXTBOX
-29
-190
-179
-208
-Streetlight Settings\n
+35
+106
+142
+126
+1. Setup roads
 11
 0.0
 1
 
 SLIDER
-29
-216
-219
-249
+35
+226
+210
+260
 number-of-streetlights
 number-of-streetlights
 1
 10
-8.0
+10.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-29
-343
-204
-376
+30
+586
+205
+620
 number-of-pedestrians
 number-of-pedestrians
 1
@@ -495,10 +649,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-29
-388
-204
-421
+211
+586
+386
+620
 vision
 vision
 0
@@ -510,10 +664,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-106
-136
-169
-169
+294
+133
+358
+168
 NIL
 go
 T
@@ -527,10 +681,10 @@ NIL
 1
 
 SLIDER
-229
-216
-401
-249
+217
+226
+391
+260
 minimum-distance
 minimum-distance
 0
@@ -542,24 +696,171 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-29
-316
-204
-334
-Pedestrian Settings\n
+30
+559
+205
+578
+Pedestrian Configurations\n
 11
 0.0
 1
 
 CHOOSER
-32
-44
-264
-90
+30
+36
+262
+82
 model-version
 model-version
 "pedestrian-simulation" "light-visualization"
 0
+
+TEXTBOX
+34
+200
+161
+216
+2. Setup Streetlights
+11
+0.0
+1
+
+TEXTBOX
+221
+109
+357
+124
+Setup All
+11
+0.0
+1
+
+BUTTON
+35
+134
+141
+168
+NIL
+setup-roads
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+35
+315
+118
+349
+setup-all
+setup-all-streetlights
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+126
+315
+219
+349
+setup-one
+setup-one-streetlight\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+TEXTBOX
+35
+382
+288
+403
+3. Setup Start and Destination Points
+11
+0.0
+1
+
+SLIDER
+35
+407
+231
+441
+number-of-starting-points
+number-of-starting-points
+1
+10
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+BUTTON
+38
+450
+118
+484
+setup-all
+setup-all-starting-points
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+126
+450
+219
+484
+setup-one
+setup-one-starting-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+39
+493
+250
+527
+NIL
+setup-one-destination-point
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
