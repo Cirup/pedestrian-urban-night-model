@@ -31,7 +31,7 @@ patches-own [
 to setup
   clear-all
 
-  set-patch-size 5
+  set-patch-size 7
   set current-number-of-streetlights 0
   set-default-shape streetlights "circle"
   set scale-factor 10
@@ -78,7 +78,7 @@ end
 to setup-roads
   clear-all
 
-  set-patch-size 5
+  set-patch-size 7
   set current-number-of-streetlights 0
   set-default-shape streetlights "circle"
   set scale-factor 10
@@ -422,7 +422,7 @@ to draw-road
   create-roads -40 -38 23 40 ; quadrant 2
   create-roads -55 -53 1 11 ; quadrant 2 through 3
   create-roads -45 -41 -19 -3 ; quadrant 3
-  create-roads -60 -59 -31 -1 ; quadrant 4
+  create-roads -63 -58 -32 -1 ; quadrant 4
   create-roads 55 57 -25 0 ; quadrant 4
   create-roads 61 65 2 30
   create-roads -80 -74 2  21
@@ -549,13 +549,13 @@ to-report number-of-lanes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-408
-33
-1148
-501
+464
+17
+1410
+614
 -1
 -1
-5.0
+7.0
 1
 10
 1
@@ -596,12 +596,12 @@ SLIDER
 35
 266
 211
-300
+299
 brightness
 brightness
 1
 10
-5.0
+10.0
 1
 1
 lum
@@ -621,12 +621,12 @@ SLIDER
 35
 226
 210
-260
+259
 number-of-streetlights
 number-of-streetlights
 1
 10
-10.0
+8.0
 1
 1
 NIL
@@ -636,12 +636,12 @@ SLIDER
 30
 586
 205
-620
+619
 number-of-pedestrians
 number-of-pedestrians
 1
 20
-10.0
+16.0
 1
 1
 NIL
@@ -651,12 +651,12 @@ SLIDER
 211
 586
 386
-620
+619
 vision
 vision
 0
 20
-20.0
+18.0
 1
 1
 NIL
@@ -683,12 +683,12 @@ SLIDER
 217
 226
 391
-260
+259
 minimum-distance
 minimum-distance
 0
 10
-0.0
+2.0
 1
 1
 NIL
@@ -708,7 +708,7 @@ CHOOSER
 30
 36
 262
-82
+81
 model-version
 model-version
 "pedestrian-simulation" "light-visualization"
@@ -718,7 +718,7 @@ TEXTBOX
 34
 200
 161
-216
+218
 2. Setup Streetlights
 11
 0.0
@@ -728,7 +728,7 @@ TEXTBOX
 221
 109
 357
-124
+127
 Setup All
 11
 0.0
@@ -799,12 +799,12 @@ SLIDER
 35
 407
 231
-441
+440
 number-of-starting-points
 number-of-starting-points
 1
 10
-5.0
+4.0
 1
 1
 NIL
